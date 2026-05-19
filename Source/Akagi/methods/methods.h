@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2014 - 2025
+*  (C) COPYRIGHT AUTHORS, 2014 - 2026
 *
 *  TITLE:       METHODS.H
 *
-*  VERSION:     3.68
+*  VERSION:     3.70
 *
-*  DATE:        07 Mar 2025
+*  DATE:        15 May 2026
 *
 *  Prototypes and definitions for UAC bypass methods table.
 *
@@ -41,7 +41,7 @@ typedef enum _UCM_METHOD {
     UacMethodInetMgr,           
     UacMethodMMC2,              
     UacMethodSXS,               
-    UacMethodSXSConsent,        //+
+    UacMethodSXSConsent,        
     UacMethodDISM,              //+
     UacMethodComet,             
     UacMethodEnigma0x3,         
@@ -49,14 +49,14 @@ typedef enum _UCM_METHOD {
     UacMethodExpLife,           
     UacMethodSandworm,          
     UacMethodEnigma0x3_3,       
-    UacMethodWow64Logger,       //+
+    UacMethodWow64Logger,       
     UacMethodEnigma0x3_4,       
     UacMethodUiAccess,          //+
     UacMethodMsSettings,        //+
     UacMethodDiskSilentCleanup, //+
     UacMethodTokenMod,          
     UacMethodJunction,          //+
-    UacMethodSXSDccw,           //+
+    UacMethodSXSDccw,           
     UacMethodHakril,            //+
     UacMethodCorProfiler,       //+
     UacMethodCOMHandlers,       
@@ -71,13 +71,13 @@ typedef enum _UCM_METHOD {
     UacMethodCreateNewLink,     
     UacMethodDateTimeWriter,    
     UacMethodAcCplAdmin,        
-    UacMethodDirectoryMock,     //+
+    UacMethodDirectoryMock,     
     UacMethodShellSdclt,        //+
     UacMethodEgre55,            
     UacMethodTokenModUiAccess,  //+
     UacMethodShellWSReset,      
     UacMethodSysprep5,          
-    UacMethodEditionUpgradeMgr, //+
+    UacMethodEditionUpgradeMgr, 
     UacMethodDebugObject,       //+
     UacMethodGlupteba,          
     UacMethodShellChangePk,     //+
@@ -88,7 +88,7 @@ typedef enum _UCM_METHOD {
     UacMethodFwCplLua2,         //+
     UacMethodMsSettingsProtocol,//+
     UacMethodMsStoreProtocol,   //+
-    UacMethodPca,               //+
+    UacMethodPca,               
     UacMethodCurVer,            //+
     UacMethodNICPoison2,        //+
     UacMethodMsdt,              //+
@@ -97,10 +97,11 @@ typedef enum _UCM_METHOD {
     UacMethodVFServerDiagProf,  //+
     UacMethodIscsiCpl,          //+
     UacMethodAtlHijack,         //+
-    UacMethodSspiDatagram,      //+
+    UacMethodSspiDatagram,      
     UacMethodTokenModUiAccess2, //+
     UacMethodRequestTrace,      //+
     UacMethodQuickAssist,       //+
+    UacMethodCleanMgrAdmin,     //+
     UacMethodMax,
     UacMethodInvalid = 0xabcdef
 } UCM_METHOD;

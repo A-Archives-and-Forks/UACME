@@ -4655,3 +4655,58 @@ BOOLEAN supReplaceVersionInfo(
 
     return bResult;
 }
+
+/*
+* supEnumPathEnvironmentVariable
+*
+* Purpose:
+*
+* Enumerate environment variables and execute callback on each.
+*
+*/
+BOOLEAN supEnumPathEnvironmentVariable(
+    _In_ PSUP_ENUM_PATH_CALLBACK Callback,
+    _In_opt_ PVOID Context
+)
+{
+    ULONG          i;
+    LPCWSTR        lpPath;
+    UNICODE_STRING usPath;
+    WCHAR          szBuffer[MAX_PATH * 4];
+
+    if (Callback == NULL)
+        return FALSE;
+
+    RtlInitUnicodeString(&usPath, L"PATH=");
+
+    lpPath = supQueryEnvironmentVariableOffset(&usPath);
+    if (lpPath == NULL || *lpPath == 0)
+        return FALSE;
+
+    do {
+
+        i = 0;
+
+        while (*lpPath != 0 && *lpPath != L';') {
+            if (i < RTL_NUMBER_OF(szBuffer) - 1)
+                szBuffer[i++] = *lpPath;
+
+            lpPath++;
+        }
+
+        szBuffer[i] = 0;
+
+        if (i != 0) {
+            if (Callback(szBuffer, Context) == FALSE)
+                return FALSE;
+        }
+
+        if (*lpPath == 0)
+            break;
+
+        lpPath++;
+
+    } while (TRUE);
+
+    return TRUE;
+}

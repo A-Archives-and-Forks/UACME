@@ -181,6 +181,7 @@
 #define QUICKASSIST_EXE             L"QuickAssist.exe"
 #define SDCLT_EXE                   L"sdclt.exe"
 #define SLUI_EXE                    L"slui.exe"
+#define SYSTEMADMFLOWS_EXE          L"SystemSettingsAdminFlows.exe"
 #define TASKHOSTW_EXE               L"taskhostw.exe"
 #define WINSAT_EXE                  L"winsat.exe"
 #define WINVER_EXE                  L"winver.exe"
@@ -217,6 +218,11 @@
 //
 #define EVENTVWR_MSC                L"eventvwr.msc"
 #define WMIMGMT_MSC                 L"WmiMgmt.msc"
+
+//
+// Expected payload name for COM server.
+//
+#define ACTIVE_EXE                  L"Active.exe" //PYSH
 
 //
 // Units specific values

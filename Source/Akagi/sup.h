@@ -1,12 +1,12 @@
 /*******************************************************************************
 *
-*  (C) COPYRIGHT AUTHORS, 2014 - 2025
+*  (C) COPYRIGHT AUTHORS, 2014 - 2026
 *
 *  TITLE:       SUP.H
 *
-*  VERSION:     3.68
+*  VERSION:     3.70
 *
-*  DATE:        07 Mar 2025
+*  DATE:        15 Mar 2026
 *
 *  Common header file for the program support routines.
 *
@@ -72,6 +72,11 @@ typedef VOID(WINAPI* PSUP_UAS_ENUMERATION_CALLBACK_FUNCTION)(
     _In_     PUSER_ASSOC_SIGNATURE Signature,
     _In_opt_ PVOID Context,
     _Inout_  BOOLEAN* StopEnumeration
+    );
+
+typedef BOOLEAN(CALLBACK* PSUP_ENUM_PATH_CALLBACK)(
+    _In_ LPCWSTR PathEntry,
+    _In_opt_ PVOID Context
     );
 
 //
@@ -496,6 +501,10 @@ BOOLEAN supReplaceVersionInfo(
     _In_ PBYTE lpResource,
     _In_ DWORD dwResourceSize,
     _In_ DWORD dwKey);
+
+BOOLEAN supEnumPathEnvironmentVariable(
+    _In_ PSUP_ENUM_PATH_CALLBACK Callback,
+    _In_opt_ PVOID Context);
 
 #ifdef _DEBUG
 #define supDbgMsg(Message)  OutputDebugString(Message)
