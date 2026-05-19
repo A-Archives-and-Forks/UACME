@@ -6,7 +6,7 @@
 *
 *  VERSION:     3.70
 *
-*  DATE:        07 May 2026
+*  DATE:        15 May 2026
 *
 *  Prototypes of methods for UAC bypass methods table.
 *
@@ -184,6 +184,10 @@ NTSTATUS ucmRequestTraceMethod(
     _In_ DWORD ProxyDllSize);
 
 NTSTATUS ucmQuickAssistMethod(
+    _In_ PVOID ProxyDll,
+    _In_ DWORD ProxyDllSize);
+
+NTSTATUS ucmCleanMgrAdminMethod(
     _In_ PVOID ProxyDll,
     _In_ DWORD ProxyDllSize);
 
