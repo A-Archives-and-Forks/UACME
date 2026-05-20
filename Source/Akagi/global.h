@@ -78,6 +78,7 @@
 #include "shared\cmdline.h"
 #include "shared\_filename.h"
 #include "shared\ldr.h"
+#include "shared\wintrustex.h"
 #include "shared\windefend.h"
 #include "shared\consts.h"
 #include "sup.h"

